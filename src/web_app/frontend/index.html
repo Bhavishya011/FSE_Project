@@ -14,6 +14,8 @@
             --text-primary: #333333;
             --text-secondary: #666666;
             --border-color: #e0e0e0;
+            --error-color: #f44336;
+            --success-color: #4CAF50;
         }
 
         * {
@@ -30,7 +32,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -44,7 +46,7 @@
         }
 
         .header-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 0 20px;
         }
@@ -70,7 +72,7 @@
 
         .controls {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -86,7 +88,7 @@
             margin-bottom: 8px;
         }
 
-        input[type="datetime-local"] {
+        select, input[type="datetime-local"], input[type="range"] {
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -94,9 +96,34 @@
             transition: border-color 0.3s;
         }
 
-        input[type="datetime-local"]:focus {
+        select:focus, input[type="datetime-local"]:focus {
             outline: none;
             border-color: var(--primary-color);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: var(--border-color);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .epsilon-value {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
         }
 
         button {
@@ -113,6 +140,12 @@
 
         button:hover {
             background-color: var(--secondary-color);
+        }
+
+        .data-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
 
         .chart-container {
@@ -201,8 +234,39 @@
             font-size: 0.9rem;
         }
 
+        .error-message {
+            background-color: var(--error-color);
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-container {
                 grid-template-columns: 1fr;
             }
             
@@ -225,8 +289,23 @@
     </header>
 
     <div class="container">
+        <div class="error-message" id="errorMessage"></div>
+
         <div class="card">
             <div class="controls">
+                <div class="control-group">
+                    <label for="metricType">Metric Type</label>
+                    <select id="metricType">
+                        <option value="traffic">Traffic</option>
+                        <option value="pollution">Pollution</option>
+                        <option value="energy">Energy</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="epsilon">Privacy Budget (ε)</label>
+                    <input type="range" id="epsilon" min="0.1" max="3.0" step="0.1" value="1.0">
+                    <div class="epsilon-value">ε = <span id="epsilonValue">1.0</span></div>
+                </div>
                 <div class="control-group">
                     <label for="startTime">Start Time</label>
                     <input type="datetime-local" id="startTime">
@@ -241,24 +320,42 @@
             </div>
         </div>
 
-        <div class="card">
-            <h2 class="chart-title">Privacy-Protected Sensor Data</h2>
-            <div class="chart-container" id="chart"></div>
-        </div>
+        <div class="data-container">
+            <div class="card">
+                <h2 class="chart-title">Original Data</h2>
+                <div class="chart-container" id="originalChart">
+                    <div class="loading-spinner" id="originalSpinner"></div>
+                </div>
+                <table id="originalTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Sensor ID</th>
+                            <th>Location</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="originalBody"></tbody>
+                </table>
+            </div>
 
-        <div class="card">
-            <h2 class="chart-title">Detailed Sensor Readings</h2>
-            <table id="metricsTable">
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>Sensor ID</th>
-                        <th>Location</th>
-                        <th>Protected Value</th>
-                    </tr>
-                </thead>
-                <tbody id="metricsBody"></tbody>
-            </table>
+            <div class="card">
+                <h2 class="chart-title">Privacy-Protected Data</h2>
+                <div class="chart-container" id="protectedChart">
+                    <div class="loading-spinner" id="protectedSpinner"></div>
+                </div>
+                <table id="protectedTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Sensor ID</th>
+                            <th>Location</th>
+                            <th>Protected Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="protectedBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -279,8 +376,30 @@
             document.getElementById('endTime').value = formatDate(now);
         }
 
-        function renderChart(data) {
-            const chartContainer = document.getElementById('chart');
+        // Initialize loading spinners
+        const originalSpinner = document.getElementById('originalSpinner');
+        const protectedSpinner = document.getElementById('protectedSpinner');
+
+        function showLoading(isLoading) {
+            if (originalSpinner && protectedSpinner) {
+                originalSpinner.style.display = isLoading ? 'block' : 'none';
+                protectedSpinner.style.display = isLoading ? 'block' : 'none';
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+
+        function renderChart(containerId, data, valueField) {
+            const chartContainer = document.getElementById(containerId);
+            if (!chartContainer) return;
+            
             chartContainer.innerHTML = '';
             
             if (data.length === 0) {
@@ -288,20 +407,22 @@
                 return;
             }
             
-            const maxValue = Math.max(...data.map(d => d.protected_value));
-            const scale = 350 / maxValue; // Chart height is 350px
+            const maxValue = Math.max(...data.map(d => d[valueField]));
+            const scale = 350 / maxValue;
             
             data.forEach(item => {
                 const bar = document.createElement('div');
                 bar.className = 'bar';
-                bar.style.height = `${item.protected_value * scale}px`;
-                bar.title = `Time: ${new Date(item.timestamp).toLocaleString()}\nValue: ${item.protected_value.toFixed(2)}`;
+                bar.style.height = `${item[valueField] * scale}px`;
+                bar.title = `Time: ${new Date(item.timestamp).toLocaleString()}\nValue: ${item[valueField].toFixed(2)}`;
                 chartContainer.appendChild(bar);
             });
         }
 
-        function updateTable(data) {
-            const tbody = document.getElementById('metricsBody');
+        function updateTable(tbodyId, data, valueField) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
             
             if (data.length === 0) {
@@ -317,42 +438,64 @@
                     <td>${new Date(item.timestamp).toLocaleString()}</td>
                     <td>${item.sensor_id}</td>
                     <td>(${item.lat.toFixed(4)}, ${item.lon.toFixed(4)})</td>
-                    <td>${item.protected_value.toFixed(2)}</td>
+                    <td>${item[valueField].toFixed(2)}</td>
                 `;
                 tbody.appendChild(row);
             });
         }
 
         async function fetchMetrics() {
-            const startTime = document.getElementById('startTime').value;
-            const endTime = document.getElementById('endTime').value;
+            const metricType = document.getElementById('metricType')?.value || 'traffic';
+            const epsilon = document.getElementById('epsilon')?.value || '1.0';
+            const startTime = document.getElementById('startTime')?.value;
+            const endTime = document.getElementById('endTime')?.value;
+            
+            if (!startTime || !endTime) {
+                showError('Please select both start and end times');
+                return;
+            }
             
             try {
-                document.getElementById('status').textContent = 'Fetching data...';
-                const response = await fetch(`/metrics?type=traffic&start=${startTime}&end=${endTime}`);
+                showLoading(true);
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.textContent = 'Fetching data...';
+                }
+                
+                const response = await fetch(`/metrics?type=${metricType}&epsilon=${epsilon}&start=${startTime}&end=${endTime}`);
                 const data = await response.json();
                 
                 if (data.error) {
-                    document.getElementById('status').textContent = 'Error: ' + data.error;
+                    showError(data.error);
                     return;
                 }
                 
-                renderChart(data.data);
-                updateTable(data.data);
-                document.getElementById('status').textContent = 'Data updated successfully';
+                renderChart('originalChart', data.data, 'original_value');
+                renderChart('protectedChart', data.data, 'protected_value');
+                updateTable('originalBody', data.data, 'original_value');
+                updateTable('protectedBody', data.data, 'protected_value');
                 
-                // Reset status after 3 seconds
-                setTimeout(() => {
-                    document.getElementById('status').textContent = 'Connected';
-                }, 3000);
+                if (statusElement) {
+                    statusElement.textContent = 'Data updated successfully';
+                    setTimeout(() => {
+                        statusElement.textContent = 'Connected';
+                    }, 3000);
+                }
             } catch (error) {
-                document.getElementById('status').textContent = 'Error: ' + error.message;
+                showError('Error fetching metrics: ' + error.message);
+            } finally {
+                showLoading(false);
             }
         }
 
         // Initialize datetime inputs
         updateDateTimeInputs();
-        
+
+        // Update epsilon value display
+        document.getElementById('epsilon').addEventListener('input', function() {
+            document.getElementById('epsilonValue').textContent = this.value;
+        });
+
         // Auto-refresh data every 30 seconds
         setInterval(fetchMetrics, 30000);
     </script>
