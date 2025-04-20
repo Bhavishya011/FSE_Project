@@ -589,10 +589,10 @@
         // Initialize datetime inputs with default values
         function initDateTimeInputs() {
             const now = new Date();
-            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
             
             // Format dates for input
-            document.getElementById('startTime').value = formatDate(oneHourAgo);
+            document.getElementById('startTime').value = formatDate(twoHoursAgo);
             document.getElementById('endTime').value = formatDate(now);
         }
 
@@ -628,9 +628,14 @@
                     return;
                 }
 
-                updateCharts(data.data);
-                document.getElementById('currentMetric').textContent = metricType.charAt(0).toUpperCase() + metricType.slice(1);
-                document.getElementById('currentEpsilon').textContent = epsilon;
+                // Ensure we have enough data points
+                if (data.data && data.data.length > 0) {
+                    updateCharts(data.data);
+                    document.getElementById('currentMetric').textContent = metricType.charAt(0).toUpperCase() + metricType.slice(1);
+                    document.getElementById('currentEpsilon').textContent = epsilon;
+                } else {
+                    showError('No data available. Please try a different time range.');
+                }
             } catch (error) {
                 showError('Error fetching data: ' + error.message);
                 console.error('Error details:', error);
@@ -651,8 +656,8 @@
         initDateTimeInputs();
         fetchData();
 
-        // Auto-refresh every 30 seconds
-        setInterval(fetchData, 30000);
+        // Auto-refresh every 2 seconds
+        setInterval(fetchData, 2000);
     </script>
 </body>
 </html>
